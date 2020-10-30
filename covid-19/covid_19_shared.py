@@ -10,7 +10,7 @@ def list_of_JHUD_US_states():
 
 
 #------------------------------------------------------
-def loadJHUData_USA(st : str):
+def load_JHU_Data_USA(st : str):
     class Settings:
         from datetime import datetime
 
@@ -54,14 +54,14 @@ def loadJHUData_USA(st : str):
     return df
 
 
-def list_of_JHUD_countries():
+def list_of_JHU_countries():
     conf_url="https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
     df = pd.read_csv(conf_url)
     countries = df["Country/Region"]
     return countries.unique()    
 
 
-def load_JHUD_global(st : str):
+def load_JHU_Data_global(st : str):
     class Settings:
         from datetime import datetime
 
