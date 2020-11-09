@@ -2,6 +2,8 @@ import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
 
+plt.rcParams.update({'figure.max_open_warning': 0})   # get rid of warning
+
 def list_of_JHUD_US_states():
     conf_url = "https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"
     df = pd.read_csv(conf_url)
@@ -109,43 +111,30 @@ def load_JHU_Data_global(st : str):
     )
     return df
 
+def USA_population():
+    url = "http://www2.census.gov/programs-surveys/popest/datasets/2010-2019/national/totals/nst-est2019-alldata.csv"
+
+    df = pd.read_csv(url)
+    df = df[df.STATE != 0]
+    df = pd.DataFrame({"Name" : df.NAME, "Population" : df.CENSUS2010POP}).set_index("Name")
+    return df.Population
+
+
+#---------------------------------------------------------------------
 
 def growth_pcnt(ser): 
     return (ser - ser.shift(1)) / ser * 100
 
-class Country_COVID19_Stats:
-    def __init__(self, Country: str):
-        self.country_ = Country
-        self.cv_data_ = load_JHU_Data_global(self.country_)
+class COVID_19_Stats:
+    def __init__(self, region: str):
+        self.region_ = region
+        self.load()
         self.confirmed_new_ = (self.cv_data_.Confirmed - self.cv_data_.Confirmed.shift(1)).dropna()
         self.deaths_new_ = (self.cv_data_.Dead - self.cv_data_.Dead.shift(1)).dropna()
-        self.recovered_new_ = (self.cv_data_.Recovered - self.cv_data_.Recovered.shift(1)).dropna()
         self.deaths_new_pcnt_ = growth_pcnt(self.cv_data_.Dead)
         self.confirmed_new_pcnt_ = growth_pcnt(self.cv_data_.Confirmed)
 
-
-    def added_new_cases(self):
-
-        growth = pd.Series((self.confirmed_new_ - (self.deaths_new_ + self.recovered_new_)).array
-                           , index=self.cv_data_.index[1:]).dropna()
-
-        print(growth.tail(5))
-
-        growth.plot(figsize=(14, 6)
-                    , title=f'{self.country_} Added New Cases - full range'
-                    , legend=True
-                    , label="New Cases"
-                    , style='.-')
-        growth.rolling(30).mean().plot(grid=True, legend=True, label="30 days MA")
-        plt.show()
-
-
-
-        df_data = self.deaths_new_[60:].dropna()
-        df_ma = self.deaths_new_[30:].rolling(30).mean().dropna()
-
-        print("Deaths Per Day\n" + str(self.deaths_new_.tail()))
-        
+       
     def deaths_additions(self):
         plt.figure(figsize = (15,10))
 
@@ -153,7 +142,7 @@ class Country_COVID19_Stats:
         plt.figure(figsize = (15,10))
 
         print("Deaths Per Day\n" + str(df.tail()))
-        df.plot(title = f'{self.country_} Daily Deaths Additions'
+        df.plot(title = f'{self.region_} Daily Deaths Additions'
                 , grid = True
                 , legend = True
                 , style = '-o'
@@ -161,7 +150,7 @@ class Country_COVID19_Stats:
                 , color = ["darkred"]
                )
         plt.show()
-        df[-60:].plot(title = f'{self.country_} Daily Deaths Additions - last 60 days'
+        df[-60:].plot(title = f'{self.region_} Daily Deaths Additions - last 60 days'
                 , grid = True
                 , legend = True
                 , style = '-o'
@@ -173,7 +162,7 @@ class Country_COVID19_Stats:
     def cases_additions(self):
         df = pd.DataFrame({"Daily Cases Addition" : self.confirmed_new_}, index=self.deaths_new_.index)
         print("New Cases Per Day\n" + str(df.tail()))
-        df.plot(title = f"{self.country_} Daily Cases Addition"
+        df.plot(title = f"{self.region_} Daily Cases Addition"
                 , grid = True
                 , legend = True
                 , style = '-o'
@@ -182,7 +171,7 @@ class Country_COVID19_Stats:
                )
         plt.show()
 
-        df[-60:].plot(title = f"{self.country_} Daily Cases Addition - last 60 days"
+        df[-60:].plot(title = f"{self.region_} Daily Cases Addition - last 60 days"
                 , grid = True
                 , legend = True
                 , style = '-o'
@@ -196,18 +185,19 @@ class Country_COVID19_Stats:
                               , "Daily Cases Addition (%)" : self.confirmed_new_pcnt_}
                           , index=self.deaths_new_pcnt_.index)['2020-03-01':]
 
-        # df.plot(title = "COVID-19 Dynamics (%)"
-        #         , grid = True
-        #         , legend = True
-        #         , style = '-o'
-        #         , figsize=(14, 6)
-        #         , color = ["darkred", "darkblue"]
-        #        )
+#         df.plot(title = "COVID-19 Dynamics (%)"
+#                 , grid = True
+#                 , legend = True
+#                 , style = '-o'
+#                 , figsize=(14, 6)
+#                 , color = ["darkred", "darkblue"]
+#                )
 
-        # Last 90 days
+        # Last N days
 
-        df = df[-90:]
-        df.plot(title = f'{self.country_} COVID-19 Dynamics - last 90 days (%)'
+        days = 90
+#         df = df[-days:]
+        df[-days:].plot(title = f'{self.region_} COVID-19 Dynamics - last {days} days (%)'
                 , grid = True
                 , legend = True
                 , style = '-o'
@@ -222,56 +212,45 @@ class Country_COVID19_Stats:
         self.deaths_additions()
         self.cases_additions()
         self.dynamics()
-        
 
-class USA_State_COVID19_Stats:
+class Country_COVID19_Stats(COVID_19_Stats):
+    def __init__(self, country: str):
+        super(Country_COVID19_Stats, self).__init__(country)
+    
+    def load(self):
+        self.cv_data_ = load_JHU_Data_global(self.region_)
+
+    def added_new_cases(self):
+        self.recovered_new_ = (self.cv_data_.Recovered - self.cv_data_.Recovered.shift(1)).dropna()
+
+        growth = pd.Series((self.confirmed_new_ - (self.deaths_new_ + self.recovered_new_)).array
+                           , index=self.cv_data_.index[1:]).dropna()
+
+        print(growth.tail(5))
+
+        growth.plot(figsize=(14, 6)
+                    , title=f'{self.region_} Added New Cases - full range'
+                    , legend=True
+                    , label="New Cases"
+                    , style='.-')
+        growth.rolling(30).mean().plot(grid=True, legend=True, label="30 days MA")
+        plt.show()
+
+
+
+        df_data = self.deaths_new_[60:].dropna()
+        df_ma = self.deaths_new_[30:].rolling(30).mean().dropna()
+
+        print("Deaths Per Day\n" + str(self.deaths_new_.tail()))
+
+class USA_State_COVID19_Stats(COVID_19_Stats):
     def __init__(self, state: str):
-        self.state_ = state 
+        super(USA_State_COVID19_Stats, self).__init__(state)
 
-    def show(self):
-        cv_data = load_JHU_Data_USA(self.state_)
-        confirmed_new = (cv_data.Confirmed - cv_data.Confirmed.shift(1)).dropna()
-        dead_new = (cv_data.Dead - cv_data.Dead.shift(1)).dropna()
+    def load(self):
+        self.cv_data_ = load_JHU_Data_USA(self.region_)
 
-        plt.figure(figsize = (15,10))
-
-        df = pd.DataFrame({"Daily Deaths Addition" :  dead_new}, index=dead_new.index)
-        plt.figure(figsize = (15,10))
-
-        print("Deaths Per Day\n" + str(df.tail()))
-        df.plot(title = f"{self.state_} Daily Deaths Additions"
-                , grid = True
-                , legend = True
-                , style = '-o'
-                , figsize=(14, 6)
-                , color = ["darkred"]
-               )
-        plt.show()
-        df[-60:].plot(title = f"{self.state_} Daily Deaths Additions - last 60 days"
-                , grid = True
-                , legend = True
-                , style = '-o'
-                , figsize=(14, 6)
-                , color = ["darkred"]
-               )
-        plt.show()
-
-        df = pd.DataFrame({"Daily Cases Addition" : confirmed_new}, index=dead_new.index)
-        print("New Cases Per Day\n" + str(df.tail()))
-        df.plot(title = f"{self.state_} Daily Cases Addition"
-                , grid = True
-                , legend = True
-                , style = '-o'
-                , figsize=(14, 6)
-                , color = ["darkblue"]
-               )
-        plt.show()
-
-        df[-60:].plot(title = f"{self.state_} Daily Cases Addition - last 60 days"
-                , grid = True
-                , legend = True
-                , style = '-o'
-                , figsize=(14, 6)
-                , color = ["darkblue"]
-               )
-        plt.show()
+    def added_new_cases(self):
+        # no data for numbers of recovered cases (Yet?) TODO
+        pass
+    
