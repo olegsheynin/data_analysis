@@ -10,6 +10,14 @@ def list_of_JHUD_US_states():
     res = df["Province_State"]
     return res.unique()    
 
+def list_of_USA_state_counties(state: str):
+    conf_url = "https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_US.csv"
+    df = pd.read_csv(conf_url)
+    df.drop(df[ df["Province_State"] != state].index, inplace=True)
+    res = df['Admin2']
+ 
+    return res
+
 
 
 class USA_Data:
@@ -57,11 +65,49 @@ def usa_state_data(state : str, usa_data = None):
     )
     return df
 
+def usa_state_county_data(state : str, county: str, usa_data = None):
+    
+    if usa_data is None:
+        usa_data = USA_Data()
+    confirmed = usa_data.confirmed_.copy()
+    deaths = usa_data.deaths_.copy()
+    
+
+
+    for df in [deaths, confirmed]:
+        # Filter Country
+        df.drop(df[ df["Province_State"] != state].index, inplace=True)
+        df.drop(df[ df["Admin2"] != county].index, inplace=True)
+        # Drop Unused Columns:
+        columns_to_delete = range(0, 11)
+        df.drop(df.columns[columns_to_delete], axis=1, inplace=True)
+        if 'Population' in df:
+             del df['Population']
+        df.reset_index()
+    
+    
+    confirmed_ser = confirmed.sum()
+    confirmed_ser.index.names = ["Date"]
+    confirmed_ser.index = pd.to_datetime(confirmed_ser.index)
+
+    deaths_ser = deaths.sum()
+    deaths_ser.index.names = ["Date"]
+    deaths_ser.index = pd.to_datetime(deaths_ser.index)
+    
+    df = pd.DataFrame({
+        "Confirmed" : confirmed_ser
+        , "Dead" : deaths_ser
+                      }
+    )
+    return df
+
+
 def list_of_JHU_countries():
     conf_url="https://github.com/CSSEGISandData/COVID-19/raw/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv"
     df = pd.read_csv(conf_url)
     countries = df["Country/Region"]
     return countries.unique()    
+
 
 
 class Global_Data:
@@ -185,6 +231,18 @@ class COVID_19_Stats:
                 , color = ["darkred"]
                )
         plt.show()
+        
+        df2 = df[-120:]
+        df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample('W-MON')["Daily Deaths Addition"].sum()})
+        df2.plot(title = f'{self.region_} Weekly Deaths - last 120 days'
+                , kind = 'bar'
+                , grid = True
+                , legend = True
+                , figsize=(14, 6)
+                , color = ["darkmagenta"]
+               )
+        plt.show()
+
 
     def cases_additions(self):
         df = pd.DataFrame({"Daily Cases Addition" : self.confirmed_new_}, index=self.deaths_new_.index)
@@ -225,7 +283,7 @@ class COVID_19_Stats:
         
 
     def show(self):
-        self.added_new_cases()
+#         self.added_new_cases()
         self.deaths_additions()
         self.cases_additions()
         self.dynamics()
@@ -235,4 +293,43 @@ def Country_COVID19_Stats(country: str):
 
 def USA_State_COVID19_Stats(state : str):
     return COVID_19_Stats(state, usa_state_data(state))
-    
+
+def USA_State_County_COVID19_Stats(state : str, county: str):
+    return COVID_19_Stats(f"{state}:{county}", usa_state_county_data(state, county))
+
+
+def get_all_states_stats(verbose : bool = True):
+    if (verbose):
+        print("Getting population...")
+    pop = USA_population()
+
+    if (verbose): print("Getting list of states...")
+    states = list_of_JHUD_US_states()
+
+    if (verbose): print("Getting USA data...")
+    us_data = USA_Data()
+
+    if (verbose): print("%-30s%-10s%-20s%-10s%-16s" 
+          % ("State", "New Conf.", "Conf./Popul.(%)"
+             , "New Death", "Death/Popul.(%)")
+         )
+    df = pd.DataFrame()
+    for state in states:
+        if state in pop:
+
+            stats = COVID_19_Stats(state, usa_state_data(state, us_data))
+            state_pop = int(pop[state])
+            stats.pops_ratio_conf_ = stats.cv_data_.Confirmed * 100 / state_pop
+            stats.pops_ratio_deaths_ = stats.cv_data_.Dead * 100 / state_pop
+            if (verbose): print("%-30s%-10d%-20f%-10d%-16f" 
+                  % (state
+                        , int(stats.confirmed_new_[-1])
+                        , stats.pops_ratio_conf_[-1]
+                        , int(stats.deaths_new_[-1])
+                        , stats.pops_ratio_deaths_[-1]
+                       )
+                 )
+            df = df.append(pd.DataFrame({"State" : [state], "Statistics": [stats], "Population" : [state_pop]}))
+    #         stats.dynamics()
+
+    return df.set_index("State")
