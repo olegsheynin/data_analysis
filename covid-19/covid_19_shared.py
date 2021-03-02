@@ -232,16 +232,17 @@ class COVID_19_Stats:
                )
         plt.show()
         
-        df2 = df[-120:]
-        df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample('W-MON')["Daily Deaths Addition"].sum()})
-        df2.plot(title = f'{self.region_} Weekly Deaths - last 120 days'
-                , kind = 'bar'
-                , grid = True
-                , legend = True
-                , figsize=(14, 6)
-                , color = ["darkmagenta"]
-               )
-        plt.show()
+        for df2 in (df, df[-120:]):
+#             df2 = df
+            df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample('W-SUN')["Daily Deaths Addition"].sum()})
+            df2.plot(title = f'{self.region_} Weekly Deaths - last {len(df2.index)} weeks'
+                    , kind = 'bar'
+                    , grid = True
+                    , legend = True
+                    , figsize=(14, 6)
+                    , color = ["darkmagenta"]
+                   )
+            plt.show()
 
 
     def cases_additions(self):
