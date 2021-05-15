@@ -1,6 +1,7 @@
 import numpy as np
 from matplotlib import pyplot as plt
 import pandas as pd
+import datetime
 
 plt.rcParams.update({'figure.max_open_warning': 0})   # get rid of warning
 
@@ -232,9 +233,13 @@ class COVID_19_Stats:
                )
         plt.show()
         
+        # yesterday data was the last recieved - base weekly data on that dow
+        dow = (datetime.datetime.now() - datetime.timedelta(1)).strftime("%a")
+        resample_fmt = f"W-{dow}"
         for df2 in (df, df[-120:]):
 #             df2 = df
-            df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample('W-SUN')["Daily Deaths Addition"].sum()})
+            df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample(resample_fmt)["Daily Deaths Addition"].sum()})
+#             df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample('W-SUN')["Daily Deaths Addition"].sum()})
             df2.plot(title = f'{self.region_} Weekly Deaths - last {len(df2.index)} weeks'
                     , kind = 'bar'
                     , grid = True
