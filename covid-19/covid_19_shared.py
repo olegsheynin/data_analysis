@@ -207,7 +207,7 @@ class COVID_19_Stats:
         df_data = self.deaths_new_[60:].dropna()
         df_ma = self.deaths_new_[30:].rolling(30).mean().dropna()
 
-        print("Deaths Per Day\n" + str(self.deaths_new_.tail()))
+#         print("Deaths Per Day\n" + str(self.deaths_new_.tail(8)))
 
     def deaths_additions(self):
         plt.figure(figsize = (15,10))
@@ -215,7 +215,7 @@ class COVID_19_Stats:
         df = pd.DataFrame({"Daily Deaths Addition" :  self.deaths_new_}, index=self.deaths_new_.index)
         plt.figure(figsize = (15,10))
 
-        print("Deaths Per Day\n" + str(df.tail()))
+        print("Deaths Per Day\n" + str(df.tail(8)))
         df.plot(title = f'{self.region_} Daily Deaths Additions'
                 , grid = True
                 , legend = True
@@ -237,9 +237,7 @@ class COVID_19_Stats:
         dow = (datetime.datetime.now() - datetime.timedelta(1)).strftime("%a")
         resample_fmt = f"W-{dow}"
         for df2 in (df, df[-120:]):
-#             df2 = df
             df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample(resample_fmt)["Daily Deaths Addition"].sum()})
-#             df2 = pd.DataFrame({"Weekly Deaths" : df2.assign(Date=df2.index).resample('W-SUN')["Daily Deaths Addition"].sum()})
             df2.plot(title = f'{self.region_} Weekly Deaths - last {len(df2.index)} weeks'
                     , kind = 'bar'
                     , grid = True
@@ -252,7 +250,7 @@ class COVID_19_Stats:
 
     def cases_additions(self):
         df = pd.DataFrame({"Daily Cases Addition" : self.confirmed_new_}, index=self.deaths_new_.index)
-        print("New Cases Per Day\n" + str(df.tail()))
+        print("New Cases Per Day\n" + str(df.tail(8)))
         df.plot(title = f"{self.region_} Daily Cases Addition"
                 , grid = True
                 , legend = True
@@ -315,8 +313,8 @@ def get_all_states_stats(verbose : bool = True):
     if (verbose): print("Getting USA data...")
     us_data = USA_Data()
 
-    if (verbose): print("%-30s%-10s%-20s%-10s%-16s" 
-          % ("State", "New Conf.", "Conf./Popul.(%)"
+    if (verbose): print("%-30s%-20s%-10s%-20s%-10s%-16s" 
+          % ("State", "Population", "New Conf.", "Conf./Popul.(%)"
              , "New Death", "Death/Popul.(%)")
          )
     df = pd.DataFrame()
@@ -327,8 +325,9 @@ def get_all_states_stats(verbose : bool = True):
             state_pop = int(pop[state])
             stats.pops_ratio_conf_ = stats.cv_data_.Confirmed * 100 / state_pop
             stats.pops_ratio_deaths_ = stats.cv_data_.Dead * 100 / state_pop
-            if (verbose): print("%-30s%-10d%-20f%-10d%-16f" 
+            if (verbose): print("%-30s%-20s%-10d%-20f%-10d%-16f" 
                   % (state
+                     , state_pop
                         , int(stats.confirmed_new_[-1])
                         , stats.pops_ratio_conf_[-1]
                         , int(stats.deaths_new_[-1])
