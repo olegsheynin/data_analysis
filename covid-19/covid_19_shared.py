@@ -161,9 +161,9 @@ def country_data(country : str, global_data = None):
     return df
 
 def USA_population():
-    url = "http://www2.census.gov/programs-surveys/popest/datasets/2010-2019/national/totals/nst-est2019-alldata.csv"
-
+    url = "https://www2.census.gov/programs-surveys/popest/datasets/2010-2020/national/totals/nst-est2020-alldata.csv"
     df = pd.read_csv(url)
+
     df = df[df.STATE != 0]
     df = pd.DataFrame({"Name" : df.NAME, "Population" : df.CENSUS2010POP}).set_index("Name")
     return df.Population
