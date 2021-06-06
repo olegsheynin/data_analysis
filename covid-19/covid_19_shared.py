@@ -338,3 +338,49 @@ def get_all_states_stats(verbose : bool = True):
     #         stats.dynamics()
 
     return df.set_index("State")
+
+def us_states_covid_19_stats(sortBy: str, is_ascending : bool = False):
+    df = get_all_states_stats()
+
+    df["PopulShare"] =df.Population * 100 / df.Population.sum()
+
+    df["Confirmed"] = pd.Series(index=df.index, data=[(v.cv_data_.Confirmed[-1]) for v in df["Statistics"]])
+    df["OneDayConf"] = pd.Series(index=df.index
+                                 , data=[v.cv_data_.Confirmed[-1] - v.cv_data_.Confirmed[-2] 
+                                         for v in df["Statistics"]])
+    df["OneWeekConfirmed"] = pd.Series(index=df.index, data=[(v.cv_data_.Confirmed[-1] - v.cv_data_.Confirmed[-8]) for v in df["Statistics"]])
+
+    df["ConfShare"] = df.Confirmed * 100 / df.Confirmed.sum()
+    df["NewConfShare"] = df.OneWeekConfirmed * 100 / df.OneWeekConfirmed.sum()  # using one week stats
+
+    df["Deaths"] = pd.Series(index=df.index, data=[(v.cv_data_.Dead[-1]) for v in df["Statistics"]])
+    df["OneDayDeaths"] = pd.Series(index=df.index, data=[v.cv_data_.Dead[-1] - v.cv_data_.Dead[-2] for v in df["Statistics"]])
+    df["OneWeekDeaths"] = pd.Series(index=df.index, data=[v.cv_data_.Dead[-1] - v.cv_data_.Dead[-8] for v in df["Statistics"]])
+
+    df["DeathsShare"] = df.Deaths * 100 / df.Deaths.sum()
+    df["NewDeathsShare"] = df.OneWeekDeaths * 100 / df.OneWeekDeaths.sum()
+    df["LastDayDeathsShare"] = df.OneDayDeaths * 100 / df.OneDayDeaths.sum()
+
+    # Indicator of intensity
+    # "Density" as ratio of value share to population share
+    df["CasesDensity"] = df.ConfShare / df.PopulShare
+    df["NewCasesDensity"] = df.NewConfShare / df.PopulShare
+
+    df["DeathsDensity"] = df.DeathsShare / df.PopulShare
+    df["NewDeathsDensity"] = df.NewDeathsShare / df.PopulShare
+
+    # del df3["Statistics"]
+    df = df[[
+              "OneWeekDeaths"
+              , "OneDayDeaths"
+
+              , "CasesDensity"
+              , "NewCasesDensity"
+
+              , "DeathsDensity"
+              , "NewDeathsDensity"
+
+              , "NewDeathsShare"
+              , "LastDayDeathsShare"
+             ]]
+    return df.sort_values(sortBy, ascending=is_ascending)
