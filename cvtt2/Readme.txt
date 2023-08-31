@@ -36,5 +36,5 @@ Backtest Connector
 Simulated Market Data
 -------------------------------------
 - accepts subscriptions 
-- sets application time (https://github.dev/olegsheynin/data_analysis/blob/master/cvtt/Readme.txt)
+- sets application time (see timeutils.py and app.py in this directory)
 
