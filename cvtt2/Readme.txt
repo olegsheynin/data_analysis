@@ -13,7 +13,7 @@ Backtest Connector  < == > Backtest Sim Module
 - - always in-proc
 - all events are delivered to the application by Exchange Instrument event queue
   - Order Status Updates (from Backtest Trader)
-  - Position Updates (from Back
+  - Position Updates (from Backtest RiskManager)
 
 --------------------------
 BacktestTrader
@@ -36,5 +36,5 @@ Backtest Connector
 Simulated Market Data
 -------------------------------------
 - accepts subscriptions 
-- sets application time (https://github.com/olegsheynin/data_analysis/blob/master/cvtt/timeutils.py, https://github.com/olegsheynin/data_analysis/blob/master/cvtt/app.py
+- sets application time (https://github.dev/olegsheynin/data_analysis/blob/master/cvtt/Readme.txt)
 
